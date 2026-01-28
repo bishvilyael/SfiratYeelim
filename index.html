@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<title>ספירת יעלים</title>
+<style>
+  body { margin: 0; background: #000; display: flex; justify-content: center; }
+  .page { position: relative; width: 100%; max-width: 1920px; }
+  .page img { width: 100%; display: block; }
+
+
+	.link {
+	  position: absolute;
+	  display: block;
+	  background: transparent;   /* שקוף לגמרי */
+	  outline: none;              /* בלי מסגרת */
+	  cursor: pointer;            /* סמן רגיל של קישור */
+	} 
+
+  #hud code { color:#9ff; }
+</style>
+</head>
+
+<body>
+  <div class="page" id="page">
+    <img src="page.png" alt="page">
+
+    <a class="link" id="L1" href="https://script.google.com/macros/s/AKfycbzio1_Eb3uY4OtnqcMasyqLj1Jd3cqT3s14SxKUE6aOF8wearmp2vg2THZIRoq2VckT/exec" target="_blank"
+       style="left:29.5%; top:91.5%; width:56%; height:7%;"></a>
+
+    <a class="link" id="L2" href="https://drive.google.com/file/d/1uuG1flUo_AvBTGTMGHqBCA6tt6fAdkKG/view" target="_blank"
+       style="left:33.5%; top:83%; width:56%; height:7%;"></a>
+
+    <a class="link" id="L3" href="https://www.google.com/maps/d/viewer?mid=1ZV3wyw_U2qiEHsuJ9LmLKnY8BGG57NU&femb=1&ll=-6.797819151554549%2C0&z=1" target="_blank"
+       style="left:38%; top:73%; width:56%; height:7%;"></a>
+
+
+<script>
+  const page = document.getElementById('page');
+  const out  = document.getElementById('out');
+  let selected = null;   // נשאר נבחר גם אחרי mouseup
+  let dragging = false;
+
+  let startX = 0, startY = 0;
+  let startLeft = 0, startTop = 0;
+
+  function pctX(px){ return (px / page.clientWidth)  * 100; }
+  function pctY(px){ return (px / page.clientHeight) * 100; }
+
+  function readPct(el){
+    const s = el.style;
+    return {
+      left: parseFloat(s.left),
+      top: parseFloat(s.top),
+      width: parseFloat(s.width),
+      height: parseFloat(s.height)
+    };
+  }
+
+  function setPct(el, v){
+    el.style.left = v.left.toFixed(2) + '%';
+    el.style.top = v.top.toFixed(2) + '%';
+    el.style.width = Math.max(0.5, v.width).toFixed(2) + '%';
+    el.style.height = Math.max(0.5, v.height).toFixed(2) + '%';
+
+    out.textContent =
+      `${el.id}: left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height};`;
+  }
+
+  function select(el){
+    selected = el;
+    // הדגשה של הנבחר (אופציונלי)
+    document.querySelectorAll('.link').forEach(x => x.style.outline = '2px solid rgba(255,0,0,0.7)');
+    selected.style.outline = '3px solid rgba(0,255,255,0.9)';
+    setPct(selected, readPct(selected));
+  }
+
+  document.querySelectorAll('.link').forEach(el=>{
+    el.addEventListener('mousedown', (e)=>{
+      e.preventDefault();
+      select(el);
+
+      dragging = true;
+      const v = readPct(el);
+      startX = e.clientX; startY = e.clientY;
+      startLeft = v.left; startTop = v.top;
+    });
+  });
+
+  window.addEventListener('mousemove', (e)=>{
+    if(!dragging || !selected) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const v = readPct(selected);
+    v.left = startLeft + pctX(dx);
+    v.top  = startTop  + pctY(dy);
+    setPct(selected, v);
+  });
+
+  window.addEventListener('mouseup', ()=>{ dragging = false; });
+
+  // Resize: Shift=width, Alt=height (עובד גם בלי לגרור)
+  window.addEventListener('wheel', (e)=>{
+    if(!selected) return;
+    if(!(e.shiftKey || e.altKey)) return;
+
+    e.preventDefault();
+    const v = readPct(selected);
+    const step = (e.deltaY > 0) ? -0.5 : 0.5; // למעלה מגדיל
+
+    if(e.shiftKey) v.width += step;
+    if(e.altKey)   v.height += step;
+
+    setPct(selected, v);
+  }, { passive:false });
+
+  // קליק על רקע מבטל בחירה (אופציונלי)
+  page.addEventListener('mousedown', (e)=>{
+    if(e.target === page || e.target.tagName === 'IMG') {
+      // לא מבטלים אוטומטית כדי לא להפריע — אם תרצה אפשר להחזיר ביטול
+    }
+  });
+</script>
+
+</body>
+</html>
