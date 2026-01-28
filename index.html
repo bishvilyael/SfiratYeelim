@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ספירת יעלים</title>
+
   <style>
     body {
       margin: 0;
@@ -16,7 +17,7 @@
       position: relative;
       width: 100%;
       max-width: 1920px;
-      line-height: 0; /* מונע "שורה" שמוסיפה גובה */
+      line-height: 0;
     }
 
     .page img {
@@ -29,8 +30,14 @@
       position: absolute;
       display: block;
       background: transparent;
-      outline: none;
       cursor: pointer;
+      outline: none;
+    }
+
+    /* מצב עריכה: מסגרות */
+    .edit .link {
+      outline: 2px solid rgba(255,0,0,0.7);
+      background: rgba(255,0,0,0.10);
     }
   </style>
 </head>
@@ -38,7 +45,8 @@
 <body>
   <div class="page" id="page">
     <img src="Page.png" alt="page">
-       <!-- מפה -->
+
+    <!-- מפה -->
     <a class="link" id="L3"
        href="https://www.google.com/maps/d/viewer?mid=1ZV3wyw_U2qiEHsuJ9LmLKnY8BGG57NU&femb=1&ll=31.628586918082146%2C34.60339190151444&z=15"
        target="_blank"
@@ -49,125 +57,97 @@
        href="https://www.youtube.com/watch?v=42W4tm_5Flg"
        target="_blank"
        style="left:31.0%; top:82.0%; width:60%; height:7%;"></a>
-    
-    <!-- טופס -->
+
+    <!-- טופס (דרך form.html כדי לנקות fbclid) -->
     <a class="link" id="L1"
-       href="<script>
-  (function () {
-    const cleanUrl = "form.html";
-
-    const l1 = document.getElementById("L1");
-    if (!l1) return;
-
-    l1.addEventListener("click", function (e) {
-      e.preventDefault();
-      // פותח את ה-URL הנקי בלי fbclid
-      window.location.href = cleanUrl;
-      // אם אתה רוצה חלון חדש:
-      // window.open(cleanUrl, "_blank");
-    });
-  })();
-</script>
-"
-       target="_blank"
+       href="./form.html"
+       target="_self"
        style="left:28.0%; top:91.0%; width:60%; height:7%;"></a>
 
-   </div>
+  </div>
 
   <script>
-    const page = document.getElementById('page');
+    // מצב עריכה רק אם יש ?edit=1 בכתובת
+    const params = new URLSearchParams(location.search);
+    const editMode = params.get('edit') === '1';
 
-    // אם אין אלמנט out, לא נשתמש בו (כדי לא לשבור את הסקריפט)
-    const out = null;
+    if (editMode) {
+      document.body.classList.add('edit');
 
-    let selected = null;
-    let dragging = false;
+      const page = document.getElementById('page');
+      let selected = null;
+      let dragging = false;
 
-    let startX = 0, startY = 0;
-    let startLeft = 0, startTop = 0;
+      let startX = 0, startY = 0;
+      let startLeft = 0, startTop = 0;
 
-    function pctX(px){ return (px / page.clientWidth)  * 100; }
-    function pctY(px){ return (px / page.clientHeight) * 100; }
+      function pctX(px){ return (px / page.clientWidth)  * 100; }
+      function pctY(px){ return (px / page.clientHeight) * 100; }
 
-    function readPct(el){
-      const s = el.style;
-      return {
-        left: parseFloat(s.left),
-        top: parseFloat(s.top),
-        width: parseFloat(s.width),
-        height: parseFloat(s.height)
-      };
-    }
-
-    function setPct(el, v){
-      el.style.left = v.left.toFixed(2) + '%';
-      el.style.top = v.top.toFixed(2) + '%';
-      el.style.width = Math.max(0.5, v.width).toFixed(2) + '%';
-      el.style.height = Math.max(0.5, v.height).toFixed(2) + '%';
-
-      if (out) {
-        out.textContent =
-          `${el.id}: left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height};`;
+      function readPct(el){
+        const s = el.style;
+        return {
+          left: parseFloat(s.left),
+          top: parseFloat(s.top),
+          width: parseFloat(s.width),
+          height: parseFloat(s.height)
+        };
       }
-    }
 
-    function select(el){
-      selected = el;
-      document.querySelectorAll('.link').forEach(x => x.style.outline = '2px solid rgba(255,0,0,0.7)');
-      selected.style.outline = '3px solid rgba(0,255,255,0.9)';
-      setPct(selected, readPct(selected));
-    }
+      function setPct(el, v){
+        el.style.left = v.left.toFixed(2) + '%';
+        el.style.top = v.top.toFixed(2) + '%';
+        el.style.width = Math.max(0.5, v.width).toFixed(2) + '%';
+        el.style.height = Math.max(0.5, v.height).toFixed(2) + '%';
+      }
 
-    document.querySelectorAll('.link').forEach(el=>{
-      el.addEventListener('mousedown', (e)=>{
-        e.preventDefault();
-        select(el);
+      function select(el){
+        selected = el;
+        // הדגשה לנבחר
+        document.querySelectorAll('.link').forEach(x => x.style.outline = '2px solid rgba(255,0,0,0.7)');
+        selected.style.outline = '3px solid rgba(0,255,255,0.9)';
+        setPct(selected, readPct(selected));
+      }
 
-        dragging = true;
-        const v = readPct(el);
-        startX = e.clientX; startY = e.clientY;
-        startLeft = v.left; startTop = v.top;
+      document.querySelectorAll('.link').forEach(el=>{
+        el.addEventListener('mousedown', (e)=>{
+          e.preventDefault();      // במצב עריכה מונעים ניווט
+          select(el);
+
+          dragging = true;
+          const v = readPct(el);
+          startX = e.clientX; startY = e.clientY;
+          startLeft = v.left; startTop = v.top;
+        });
       });
-    });
 
-    window.addEventListener('mousemove', (e)=>{
-      if(!dragging || !selected) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const v = readPct(selected);
-      v.left = startLeft + pctX(dx);
-      v.top  = startTop  + pctY(dy);
-      setPct(selected, v);
-    });
+      window.addEventListener('mousemove', (e)=>{
+        if(!dragging || !selected) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const v = readPct(selected);
+        v.left = startLeft + pctX(dx);
+        v.top  = startTop  + pctY(dy);
+        setPct(selected, v);
+      });
 
-    window.addEventListener('mouseup', ()=>{ dragging = false; });
+      window.addEventListener('mouseup', ()=>{ dragging = false; });
 
-    window.addEventListener('wheel', (e)=>{
-      if(!selected) return;
-      if(!(e.shiftKey || e.altKey)) return;
+      // Resize: Shift=width, Alt=height
+      window.addEventListener('wheel', (e)=>{
+        if(!selected) return;
+        if(!(e.shiftKey || e.altKey)) return;
 
-      e.preventDefault();
-      const v = readPct(selected);
-      const step = (e.deltaY > 0) ? -0.5 : 0.5;
+        e.preventDefault();
+        const v = readPct(selected);
+        const step = (e.deltaY > 0) ? -0.5 : 0.5;
 
-      if(e.shiftKey) v.width += step;
-      if(e.altKey)   v.height += step;
+        if(e.shiftKey) v.width += step;
+        if(e.altKey)   v.height += step;
 
-      setPct(selected, v);
-    }, { passive:false });
+        setPct(selected, v);
+      }, { passive:false });
+    }
   </script>
-  <script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
